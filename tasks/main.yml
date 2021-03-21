@@ -1,0 +1,61 @@
+--- 
+  - name: Install dependencies for docker
+    yum:
+      name: ['lvm2','yum-utils','device-mapper-persistent-data','epel-release']
+      state: latest
+  - name: Adding the docker repo
+    shell: |
+      yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  - name: Actually installing docker
+    yum:
+      name: ['docker-ce','docker-ce-cli','containerd.io','unzip']
+      state: latest
+  - name: Start and enable docker
+    service:
+      name: docker
+      state: started
+      enabled: yes
+  - name: Add ansible to the docker group
+    user:
+      name: ansible
+      groups: docker
+      append: yes
+  - name: Install pip
+    yum:
+     name: python-pip
+     update_cache: yes
+     state: present
+  - name: Install docker-py
+    pip:
+      name: docker-py
+      state: latest
+  - name: Install docker-compose
+    command: curl -L "https://github.com/docker/compose/releases/download/1.28.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  - name: Apply permissions to the binary
+    command: chmod +x /usr/local/bin/docker-compose
+  - name: Update docker-compose
+    yum:
+       name: docker-compose
+       update_cache: yes
+       state: present
+  - name: Copy docker file
+    copy: 
+      src: files/opencart.zip
+      dest: /home/taras/opencart.zip
+  - name: Unzip our project
+    become: yes
+    unarchive:
+       src: /home/taras/opencart.zip
+       dest: /home/taras/opencart
+       remote_src: yes
+  - name: Remove our archive
+    file:
+     path: /home/taras/opencart.zip
+     state: absent
+  - name: Change permission for opencart
+    file:
+     path: /home/taras/opencart/www/opencart
+     mode: '0777'
+
+  - name: Run our conteiners
+    command: 'docker-compose -f /home/taras/opencart/docker-compose.yml up -d'

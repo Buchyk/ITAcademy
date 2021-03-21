@@ -1,0 +1,38 @@
+# Define docker-compose
+version: '3'
+services:
+    nginx:
+        # Here we define last image of nginx
+        image: nginx:latest
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./hosts:/etc/nginx/conf.d
+            - ./www:/var/www
+            - ./logs/nginx:/var/log/nginx
+        # nginx will talk with our php
+        links:
+            - php
+    php:
+        # Here we define our PHP image, and will build our docker from this image
+        build: ./images/php
+        # php will talk with our mysql
+        links:
+            - mysql
+        # mount directory with our project
+        volumes:
+            - ./www:/var/www
+    mysql:
+        image: mysql
+        ports:
+            - "3306:3306"
+        volumes:
+         - /etc/mysql:/etc/mysql
+         - ./logs/mysql:/var/log/mysql
+         - ./mysql:/var/lib/mysql
+         - ./mysql-files:/var/lib/mysql-files
+        # Define password for root 
+        environment:
+          -  MYSQL_ROOT_PASSWORD=Gogi@3255
+          -  MYSQL_DATABASE=demka
